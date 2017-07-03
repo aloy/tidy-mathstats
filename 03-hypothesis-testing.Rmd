@@ -111,6 +111,120 @@ rand_distn %>%
 ```{r}
 rand_distn %>%
   filter(diffmean >= obs_diff) %>%
-  nrow(.) / (nrow(rand_distn)) ## NEED TO CHANGE THIS W/ CORRECTION
+  summarize(pvalue = (nrow(.) + 1) / (nrow(rand_distn) + 1)) %>%
+  unlist()
 ```
 
+
+## Example: Verizon Repair Times
+
+```{r}
+data("Verizon")
+glimpse(Verizon)
+```
+
+```{r}
+Verizon %>%
+  group_by(Group) %>%
+  summarize(mean = mean(Time))
+```
+
+```{r}
+mean_times <- 
+  Verizon %>%
+  group_by(Group) %>%
+  summarize(mean = mean(Time))
+
+observed <- diff(mean_times$mean)
+observed
+```
+
+```{r}
+many_shuffles <- do(4999) *
+  (Verizon %>%
+     mutate(shuffled_time = shuffle(Time)) %>%
+     group_by(Group) %>%
+     summarize(mean = mean(shuffled_time))
+  )
+```
+
+```{r}
+rand_distn <- many_shuffles %>%
+  group_by(.index) %>%
+  summarize(diffmean = diff(mean))
+head(rand_distn)
+```
+
+```{r}
+rand_distn %>%
+  ggplot(aes(x = diffmean)) +
+  geom_histogram(bins = 20) +
+  geom_vline(xintercept = observed, color = "blue")
+```
+
+```{r}
+rand_distn %>%
+  filter(diffmean <= observed) %>%
+  summarize(pvalue = (nrow(.) + 1) / (nrow(rand_distn) + 1)) %>%
+  unlist()
+```
+
+## Example: Verizon Repair Times with Other Statistics
+
+```{r}
+time_stats <- 
+  Verizon %>%
+  group_by(Group) %>%
+  summarize(median = median(Time),
+            mean25 = mean(Time, trim = .25))
+
+time_stats
+```
+
+```{r}
+obs_trim_diff <- diff(time_stats$mean25)
+obs_median_diff <- diff(time_stats$median)
+```
+
+```{r}
+many_shuffles <- do(4999) *
+  (Verizon %>%
+     mutate(shuffled_time = shuffle(Time)) %>%
+     group_by(Group) %>%
+     summarize(median = median(shuffled_time),
+               mean25 = mean(shuffled_time, trim = .25))
+  )
+
+rand_distn <- 
+  many_shuffles %>%
+  group_by(.index) %>%
+  summarize(diffmedian = diff(median),
+            diffmean25 = diff(mean25))
+```
+
+
+```{r}
+rand_distn %>%
+  ggplot(aes(x = diffmedian)) +
+  geom_histogram(bins = 20) +
+  geom_vline(xintercept = diff(time_stats$median), color = "blue")
+```
+
+```{r}
+rand_distn %>%
+  ggplot(aes(x = diffmean25)) +
+  geom_histogram(bins = 20) +
+  geom_vline(xintercept = diff(time_stats$mean25), color = "blue")
+```
+
+```{r}
+rand_distn %>%
+  filter(diffmedian <= diff(time_stats$median)) %>%
+  summarize(pvalue = (nrow(.) + 1) / (nrow(rand_distn) + 1)) %>%
+  unlist()
+
+rand_distn %>%
+  filter(diffmean25 <= diff(time_stats$mean25)) %>%
+  summarize(pvalue = (nrow(.) + 1) / (nrow(rand_distn) + 1)) %>%
+  unlist()
+```
