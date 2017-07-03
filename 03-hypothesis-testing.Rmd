@@ -1,0 +1,116 @@
+---
+title: 'Chapter 3: Hypothesis Testing'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(resampledata)
+library(mosaic)
+```
+
+
+### Example 1: Mice and Mazes
+
+```{r}
+mice <- data.frame(mouse = 1:6,
+                   treatment = rep(c("drug", "control"), each = 3), 
+                   time = c(30, 25, 20, 18, 12, 22))
+```
+
+```{r}
+mice %>%
+spread(treatment, time)
+```
+
+
+## Example: Beer and Hot Wings
+
+```{r}
+data("Beerwings")
+glimpse(Beerwings)
+```
+
+```{r}
+Beerwings %>%
+  ggplot(aes(x = Gender, y = Hotwings)) +
+  geom_boxplot() +
+  labs(y = "Number of hot wings consumed")
+```
+
+
+```{r}
+Beerwings %>%
+  ggplot(aes(x = Hotwings, color = Gender)) +
+  stat_ecdf() +
+  labs(x = "Number of hot wings", y = "Fn(x)")
+```
+
+```{r}
+Beerwings %>%
+  group_by(Gender) %>%
+  summarize(avg = mean(Hotwings))
+```
+
+```{r}
+wings <- 
+  Beerwings %>%
+  group_by(Gender) %>%
+  summarize(mean = mean(Hotwings))
+wings
+
+obs_diff <-  diff(wings$mean)
+obs_diff
+```
+
+
+```{r}
+shuffled_wings <-
+  Beerwings %>%
+  mutate(Hotwings = shuffle(Hotwings)) %>%
+  group_by(Gender) %>%
+  summarize(mean = mean(Hotwings))
+
+diff(shuffled_wings$mean)
+```
+
+```{r}
+set.seed(732017)
+many_shuffles <- do(4999) *
+  (Beerwings %>%
+     mutate(Hotwings = shuffle(Hotwings)) %>%
+     group_by(Gender) %>%
+     summarize(mean = mean(Hotwings))
+  )
+```
+
+```{r}
+rand_distn <- many_shuffles %>%
+  group_by(.index) %>%
+  summarize(diffmean = diff(mean))
+head(rand_distn)
+```
+
+```{r}
+rand_distn %>%
+  ggplot(aes(x = diffmean)) +
+  geom_histogram(bins = 20) +
+  geom_vline(xintercept = obs_diff, color = "blue")
+```
+
+
+
+```{r}
+rand_distn %>%
+  filter(diffmean >= obs_diff) %>%
+  nrow(.) / (nrow(rand_distn)) ## NEED TO CHANGE THIS W/ CORRECTION
+```
+

@@ -1,0 +1,74 @@
+---
+title: 'Chapter 2: Exploratory Data Analysis'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(resampledata)
+```
+
+## Basic Plots
+
+```{r}
+data("FlightDelays")
+glimpse(FlightDelays)
+```
+
+```{r}
+FlightDelays %>%
+  group_by(Carrier) %>%
+  summarize(nflights = n())
+```
+
+```{r}
+FlightDelays %>%
+  ggplot(aes(x = Carrier)) + 
+  geom_bar()
+```
+
+```{r}
+FlightDelays %>%
+  group_by(Carrier, Delayed30) %>%
+  summarize(nflights = n())
+```
+
+
+```{r}
+FlightDelays %>%
+  filter(Carrier == "UA") %>%
+  mutate(time_interval = cut(Delay, breaks = seq(-50, 450, by = 50))) %>%
+  group_by(time_interval) %>%
+  summarize(nflights = n())
+```
+
+```{r}
+FlightDelays %>%
+  filter(Carrier == "UA") %>%
+  ggplot(aes(x = Delay)) +
+  geom_histogram(binwidth = 50)
+```
+
+
+## Numeric Summaries
+
+```{r}
+
+```
+
+
+## Quantiles and Normal Quantile Plots
+
+
+## Empirical Cumulative Distribution Functions
+
+
+## Scatterplots
+
